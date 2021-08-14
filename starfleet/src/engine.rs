@@ -3,7 +3,7 @@
 //! file
 
 use legion::{World, serialize::Canon};
-use crossbeam_channel::Receiver;
+use crossbeam_channel::{Receiver, Sender};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeStruct};
 
 use crate::{event::Event, ser};
@@ -16,18 +16,25 @@ pub struct Engine {
     world: World,
     /// The event queue that all events are sent down
     events: Receiver<Event>,
+    /// A copy of the event sender for our event channel
+    event_sender: Sender<Event>,
 }
 
 impl Engine {
     /// Returns a new Engine with no entities or systems
     #[inline]
     pub fn new_empty() -> Self {
+        let (send, rec) = crossbeam_channel::unbounded();
         Self {
             world: World::default(),
-            events: crossbeam_channel::unbounded().1
+            events: rec,
+            event_sender: send,
         }
     }
 
+    pub fn test(&mut self) {
+        
+    }
 }
 
 impl Serialize for Engine {
@@ -96,9 +103,12 @@ impl<'de> Deserialize<'de> for Engine {
                 let entity_deserializer = Canon::default();
                 let deserializable= registry.as_deserialize(&entity_deserializer);
                 let world = seq.next_element_seed(deserializable)?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+
+                let (send, rec) = crossbeam_channel::unbounded();
                 Ok(Engine {
                     world,
-                    events: crossbeam_channel::unbounded().1
+                    events: rec,
+                    event_sender: send
                 })
             }
 
@@ -124,9 +134,11 @@ impl<'de> Deserialize<'de> for Engine {
                 }
                 let world = world.ok_or_else(|| serde::de::Error::missing_field("world"))?;
                 
+                let (send, rec) = crossbeam_channel::unbounded();
                 Ok(Engine {
                     world,
-                    events: crossbeam_channel::unbounded().1
+                    events: rec,
+                    event_sender: send
                 })
             }
         }

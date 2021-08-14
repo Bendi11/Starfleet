@@ -10,3 +10,4 @@ proc-macro = true
 lazy_static = "1.4" # For keeping a global record of hashes
 syn = { version = "1.0", features = ["full"] } # For parsing tokenstream into a known structure
 quote = "1.0" # For rebuiling a tokenstream from Rust text
+proc-macro2 = { version = "1.0", features = ["span-locations"] } # For procedural macro location getting

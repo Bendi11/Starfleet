@@ -1,4 +1,4 @@
-//! The `ser` module provides platform-independent component registration 
+//! The `ser` module provides platform-independent component registration for the `legion` crate
 use legion::serialize::Registry;
 
 #[cfg(use_linkme)]

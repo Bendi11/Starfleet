@@ -419,6 +419,7 @@ name = "starfleet-derive"
 version = "0.1.0"
 dependencies = [
  "lazy_static",
+ "proc-macro2",
  "quote",
  "syn",
 ]

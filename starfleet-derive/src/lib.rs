@@ -1,11 +1,11 @@
+use lazy_static::lazy_static;
 use proc_macro::TokenStream;
-use syn::parse::Parse;
-use syn::spanned::Spanned;
+use quote::{quote, quote_spanned};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use lazy_static::lazy_static;
-use syn::{Item, ItemEnum, ItemStruct, ItemType, ItemUnion, Token, parse_macro_input};
-use quote::{quote, quote_spanned};
+use syn::parse::Parse;
+use syn::spanned::Spanned;
+use syn::{parse_macro_input, Item, ItemEnum, ItemStruct, ItemType, ItemUnion, Token};
 
 /// From [here](http://www.isthe.com/chongo/tech/comp/fnv/)
 const FNV_OFFSET_BASIS: u64 = 14695981039346656037u64;
@@ -22,7 +22,6 @@ fn fnv1a(bytes: &[u8]) -> u64 {
     hash
 }
 
-
 lazy_static! {
     /// A set of all used hash values, used to detect collisions at compile time
     static ref HASHES: Arc<Mutex<HashMap<u64, String>>> = Arc::new(Mutex::new(HashMap::new()));
@@ -36,15 +35,22 @@ impl Parse for Attrs {
         let mut map = HashMap::new();
         loop {
             if input.is_empty() {
-                break
+                break;
             }
             let ident: syn::Ident = input.parse()?;
             let _: Token![=] = input.parse()?;
             let string: syn::LitStr = input.parse()?;
             match input.peek(Token![,]) {
-                true => { let _: Token![,] = input.parse()?; },
-                false => if !input.is_empty() {
-                    return Err(syn::Error::new(input.span(), "Expected a comma between procedural macro arguments"))
+                true => {
+                    let _: Token![,] = input.parse()?;
+                }
+                false => {
+                    if !input.is_empty() {
+                        return Err(syn::Error::new(
+                            input.span(),
+                            "Expected a comma between procedural macro arguments",
+                        ));
+                    }
                 }
             }
             map.insert(ident.to_string(), string.value());
@@ -62,10 +68,10 @@ impl Parse for Attrs {
 /// }
 /// ```
 ///
-/// If a hash collision ever does occur, the problem will be detected and compilation will fail, guranteeing no hard to detect 
+/// If a hash collision ever does occur, the problem will be detected and compilation will fail, guranteeing no hard to detect
 /// bugs with serialization occur. If the problem does arise, use the `name = val` syntax to specify a different name for serializing and
 /// deserializing the component
-/// 
+///
 /// ```rust,no_run
 /// #[component(name = "Health1")]
 /// pub struct Health {
@@ -78,41 +84,41 @@ pub fn component(attr: TokenStream, mut item: TokenStream) -> TokenStream {
     let def: TokenStream = item.clone().into();
     let parsed = parse_macro_input!(def as Item);
     let name = match parsed {
-        Item::Enum(ItemEnum { 
-            ident,
-            ..
-        }) | Item::Struct(ItemStruct {
-            ident,
-            ..
-        }) | Item::Type(ItemType {
-            ident,
-            ..
-        }) | Item::Union(ItemUnion {
-            ident,
-            ..
-        }) => ident,
-        other => return quote_spanned! {
-            other.span() => 
-            compile_error!("Expected type declaration below component attribute macro")
-        }.into()
+        Item::Enum(ItemEnum { ident, .. })
+        | Item::Struct(ItemStruct { ident, .. })
+        | Item::Type(ItemType { ident, .. })
+        | Item::Union(ItemUnion { ident, .. }) => ident,
+        other => {
+            return quote_spanned! {
+                other.span() =>
+                compile_error!("Expected type declaration below component attribute macro");
+            }
+            .into()
+        }
     };
+
+    name.span().start();
 
     //Get the name to hash for identifier, to fix hash collisions
     let hash_name = match attrs.0.get("name") {
         Some(name) => name.clone(),
-        None => name.to_string()
+        None => name.to_string(),
     };
     let hash = fnv1a(hash_name.as_bytes()); //Get the hash of the chosen identifier for component ID
 
     let mut hashes = HASHES.lock().unwrap(); //Get the collection of hashes to check for a collision
     match hashes.get(&hash) {
         Some(other) => {
-            let errmsg = format!("Hash collision occurred: {} collides with {}", hash_name, other);
+            let errmsg = format!(
+                "Hash collision occurred: {} collides with {}",
+                hash_name, other
+            );
             return quote_spanned! {
                 name.span().into() =>
-                compile_error!( #errmsg )
-            }.into()
-        },
+                compile_error!( #errmsg );
+            }
+            .into();
+        }
         None => {
             hashes.insert(hash, hash_name);
         }

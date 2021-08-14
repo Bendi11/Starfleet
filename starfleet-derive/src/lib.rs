@@ -128,7 +128,7 @@ pub fn component(attr: TokenStream, mut item: TokenStream) -> TokenStream {
 
         #[cfg(use_inventory)]
         ::inventory::submit! {
-            crate::ser::RegisterFunction( #register_fn_name )
+            crate::ser::RegistrarFunction( #register_fn_name )
         }
 
         #[cfg(use_linkme)]

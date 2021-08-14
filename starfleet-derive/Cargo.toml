@@ -1,0 +1,12 @@
+[package]
+name = "starfleet-derive"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+
+[dependencies]
+lazy_static = "1.4" # For keeping a global record of hashes
+quote = "1.0" # For rebuiling a tokenstream from Rust text

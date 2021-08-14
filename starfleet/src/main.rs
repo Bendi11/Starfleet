@@ -1,5 +1,6 @@
+pub use starfleet_derive::component;
 pub mod entity;
-use starfleet_derive;
+pub mod ser;
 
 fn main() {
     println!("Hello, world!");

@@ -2,17 +2,16 @@
 name = "starfleet"
 version = "0.1.0"
 edition = "2018"
+build = "build.rs" # Sets cfg flags depending on if linkme or inventory is used
 
 
 [dependencies]
 starfleet-derive = { path = "../starfleet-derive" }
 legion = "0.4" # Entity Component System 
 serde = "1.0" # For serialzing and deserializing legion worlds
-linkme = { version = "0.2", optional = true } # For collecting all component IDs for serialization
-inventory = { version = "0.1", optional = true }
 
-[target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.features]
-default = ["linkme"]
+[target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dependencies]
+linkme = "0.2" # For component registration on specific platforms, doesn't use life before main
 
-[target.'cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))'.features]
-default = ["inventory"]
+[target.'cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))'.dependencies]
+inventory = "0.1" # For platforms not supporting linkme, use life before main

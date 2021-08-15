@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use syn::parse::Parse;
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Item, ItemEnum, ItemStruct, ItemType, ItemUnion, Token};
+use syn::{Item, ItemEnum, ItemFn, ItemStruct, ItemType, ItemUnion, Token, parse_macro_input, parse::Parser};
 
 /// From [here](http://www.isthe.com/chongo/tech/comp/fnv/)
 const FNV_OFFSET_BASIS: u64 = 14695981039346656037u64;
@@ -134,14 +134,53 @@ pub fn component(attr: TokenStream, mut item: TokenStream) -> TokenStream {
 
         #[cfg(use_inventory)]
         ::inventory::submit! {
-            crate::ser::RegistrarFunction( #register_fn_name )
+            crate::register::RegistrarFunction( #register_fn_name )
         }
 
         #[cfg(use_linkme)]
-        #[::linkme::distributed_slice(crate::ser::COMPONENT_HASHES)]
+        #[::linkme::distributed_slice(crate::register::COMPONENT_HASHES)]
         static #static_name: fn(&mut ::legion::serialize::Registry<u64>) = #register_fn_name;
     };
 
     item.extend(TokenStream::from(component_impl));
+    item
+}
+
+/// Register this system to run at the given event or events
+/// Requires an argument for the event name
+#[proc_macro_attribute]
+pub fn on_event(attr: TokenStream, mut item: TokenStream) -> TokenStream {
+    let def: TokenStream = item.clone().into();
+    let def: ItemFn = parse_macro_input!(def as ItemFn);
+    let name = def.sig.ident;
+
+    //Parse the list of events for this system
+    let parser = syn::punctuated::Punctuated::<syn::Ident, Token![,]>::parse_separated_nonempty;
+    let list = parser.parse(attr).unwrap();
+
+    for event in list.iter().map(|ident| ident.to_string()) {
+        let register_fn_name = quote::format_ident!("_{}_register", name);
+        let system_fn_name = quote::format_ident!("{}_system", name);
+        let event_name = quote::format_ident!("{}", event.to_lowercase());
+        let static_name = quote::format_ident!("_{}_REGISTRAR", name.to_string().to_uppercase());
+
+        let system_impl = quote! {
+            fn #register_fn_name (schedules: &mut crate::register::SchedulesBuilder) {
+                schedules.#event_name.add_system( #system_fn_name() );
+            }
+    
+            #[cfg(use_inventory)]
+            ::inventory::submit! {
+                crate::register::SystemRegistrarFunction( #register_fn_name )
+            }
+    
+            #[cfg(use_linkme)]
+            #[::linkme::distributed_slice(crate::register::SYSTEM_REGISTRARS)]
+            static #static_name: fn(&mut crate::register::SchedulesBuilder) = #register_fn_name;
+        };
+        let toks: TokenStream = system_impl.into();
+        item.extend(toks); //Add the definition
+    }
+
     item
 }

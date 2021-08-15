@@ -45,6 +45,17 @@ pub fn register_components() -> Registry<u64> {
     registry
 }
 
+/// Register all components using the `inventory` crate
+#[cfg(use_inventory)]
+pub fn register_components() -> Registry<u64> {
+    let mut registry = Registry::new();
+    for component_registrar in inventory::iter::<RegistrarFunction> {
+        component_registrar(&mut registry);
+    }
+    registry
+}
+
+
 /// Register all systems using the `linkme` crate
 #[cfg(use_linkme)]
 pub fn register_systems() -> Schedules {
@@ -57,12 +68,14 @@ pub fn register_systems() -> Schedules {
     schedules.build()
 }
 
-/// Register all components using the `inventory` crate
+/// Register all systems using the `inventory` crate
 #[cfg(use_inventory)]
-pub fn register_components() -> Registry<u64> {
-    let mut registry = Registry::new();
-    for component_registrar in inventory::iter::<RegistrarFunction> {
-        component_registrar(&mut registry);
+pub fn register_systems() -> Schedules {
+    let mut schedules = SchedulesBuilder {
+        tick: legion::Schedule::builder()
+    };
+    for system_registrar in inventory::iter::<SystemRegistrarFunction> {
+        system_registrar(&mut schedules);
     }
-    registry
+    schedules.build()
 }

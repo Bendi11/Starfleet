@@ -38,20 +38,20 @@ impl Engine {
             event_sender: send,
         }
     }
-
-    /// Register all systems into their respective schedules
-    fn schedules() -> Schedules {
-        Schedules {
-            tick: Schedule::builder()
-                .build()
-        }
-    }
     
     /// Run the main event loop
     pub fn run(&mut self) {
-        let mut schedules = Self::schedules(); //Register all system functions
+        let mut schedules = register::register_systems(); //Register all system functions
         let mut resource = Resources::default();
         resource.insert::<Sender<Event>>(self.event_sender.clone());
+
+        let sender = self.event_sender.clone();
+        std::thread::spawn(move || {
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(60));
+                sender.send(Event::Tick).unwrap();
+            }
+        });
 
         loop {
             match self.events.recv().unwrap() {

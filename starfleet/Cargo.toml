@@ -11,6 +11,7 @@ legion = "0.4" # Entity Component System
 serde = "1.0" # Serialzing and deserializing legion worlds
 crossbeam-channel = "0.5" # Event handling 
 rmp-serde = "0.15" # Serializing / Deserializing game state to / from a save file
+arrayvec = { version = "0.7", features = ["serde"] } # Array backed vec storage
 
 [target.'cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))'.dependencies]
 linkme = "0.2" # Component registration on specific platforms, doesn't use life before main

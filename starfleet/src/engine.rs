@@ -167,7 +167,6 @@ impl<'de> Deserialize<'de> for Engine {
             }
         }
 
-        
         deserializer.deserialize_struct("Engine", &["world"], EngineVisitor)
     }
 }

@@ -28,12 +28,23 @@ macro_rules! impl_op {
             }
         }
     };
+    ($op:tt, $name:ident, $fn:ident -assign) => {
+        impl ::std::ops::$name for Point {
+            fn $fn (&mut self, rhs: Self) {
+                *self = Self(self.0 $op rhs.0, self.1 $op rhs.1);
+            }
+        }
+    };
 }
 
 impl_op!(* , Mul , mul);
 impl_op!(+, Add, add);
 impl_op!(-, Sub, sub);
 impl_op!(/, Div, div);
+impl_op!(+, AddAssign, add_assign -assign);
+impl_op!(-, SubAssign, sub_assign -assign);
+impl_op!(*, MulAssign, mul_assign -assign);
+impl_op!(/, DivAssign, div_assign -assign);
 
 /// A rectangle made of a low corner point and a high corner point
 /// ## Gurantees

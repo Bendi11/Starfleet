@@ -2,7 +2,7 @@
 //! handles any events that are raised by systems, and can save / load the game state to a 
 //! file
 
-use legion::{World, serialize::Canon};
+use legion::{Resources, Schedule, World, serialize::Canon};
 use crossbeam_channel::{Receiver, Sender};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeStruct};
 
@@ -20,6 +20,12 @@ pub struct Engine {
     event_sender: Sender<Event>,
 }
 
+/// The `Schedules` struct holds a [Schedule](legion::Schedule) for each event that occurs
+struct Schedules {
+    /// All systems to run on a tick
+    tick: Schedule,
+}
+
 impl Engine {
     /// Returns a new Engine with no entities or systems
     #[inline]
@@ -32,8 +38,25 @@ impl Engine {
         }
     }
 
-    pub fn test(&mut self) {
-        
+    /// Register all systems into their respective schedules
+    fn schedules() -> Schedules {
+        Schedules {
+            tick: Schedule::builder()
+                .build()
+        }
+    }
+    
+    /// Run the main event loop
+    pub fn run(&mut self) {
+        let mut schedules = Self::schedules(); //Register all system functions
+        let mut resource = Resources::default();
+        resource.insert::<Sender<Event>>(self.event_sender.clone());
+
+        loop {
+            match self.events.recv().unwrap() {
+                Event::Tick => schedules.tick.execute(&mut self.world, &mut resource)
+            }
+        }
     }
 }
 

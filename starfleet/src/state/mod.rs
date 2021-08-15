@@ -76,6 +76,71 @@ impl Rect {
         len as u32 * height as u32
     }
 
+    /// Get the lowest and leftmost point
+    #[inline(always)]
+    pub const fn low(&self) -> Point {
+        self.0
+    }
+
+    /// Get the highest and rightmost point
+    #[inline(always)]
+    pub const fn high(&self) -> Point {
+        self.1
+    }
+
+
+    /// Get the north western quarter of this rectangle
+    pub const fn nw(&self) -> Rect {
+        Rect(
+            Point(self.low().x(), self.low().y() + (self.height() / 2)), 
+            Point(self.high().x() - (self.len() / 2), self.high().y())
+        )
+    }
+
+    /// Get the north eastern quarter of this rectangle
+    pub const fn ne(&self) -> Rect {
+        Rect(
+            self.center(), 
+            self.high()
+        )
+    }
+
+    /// Get the south eastern quarter of this rectangle
+    pub const fn se(&self) -> Rect {
+        let center = self.center();
+        let half_height = self.height() / 2;
+        Rect(
+            Point(center.x(), center.y() - half_height), 
+            Point(self.high().x(), self.high().y() - half_height)
+        )
+    }
+
+    /// Get the south western quarter of this rectangle
+    pub const fn sw(&self) -> Rect {
+        Rect(
+            self.low(), 
+            self.center()
+        )
+    }
+
+
+    /// Return the center of this rectangle
+    pub const fn center(&self) -> Point {
+        Point(self.low().x() + (self.len() / 2), self.low().y() + (self.height() / 2))
+    }
+
+    /// Get the length of this rectangle
+    #[inline(always)]
+    pub const fn len(&self) -> u16 {
+        self.1.x() - self.0.x()
+    }
+
+    /// Get the height of this rectangle
+    #[inline(always)]
+    pub const fn height(&self) -> u16 {
+        self.1.y() - self.0.y()
+    }
+
     /// Check if this rectangle contains a point
     pub const fn contains(&self, point: Point) -> bool {
         point.x() >= self.0.x() && point.y() >= self.1.y() && 

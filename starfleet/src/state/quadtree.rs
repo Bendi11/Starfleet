@@ -81,8 +81,8 @@ impl Branch {
     /// Get the neighbors within a certain radius of a point
     fn neighbors(&self, pos: Point, radius: f32, neighbors: &mut Vec<(Point, Index)>) {
         let search_bb = Rect(
-            Point(pos.x() - radius, pos.y() - radius), 
-            Point(pos.x() + radius, pos.y() + radius)
+            Point((pos.x() - radius).clamp(0f32, f32::MAX), (pos.y() - radius).clamp(0f32, f32::MAX)), 
+            Point((pos.x() + radius).clamp(0f32, self.bb.high().x()), (pos.y() + radius).clamp(0f32, self.bb.high().y()))
         );
         //Make sure this branch actually can contain a point in the search area
         if self.bb.intersects(search_bb) {
@@ -488,7 +488,7 @@ mod tests {
         assert_eq!(quad.insert(Point(0., 1.), 100), Ok(()));
         quad.insert(Point(5., 1.), 200).unwrap();
         quad.insert(Point(57., 57.), 1231).unwrap();
-        let neighbors = quad.neighbors(Point(2., 3.), 5.);
+        let neighbors = quad.neighbors(Point(13., 10.), 200.);
         let mut neighbors = neighbors.iter().map(|(point, _)| *point).collect::<Vec<Point>>();
         panic!("{:?}", neighbors);
         neighbors.sort_by(|this, next| {

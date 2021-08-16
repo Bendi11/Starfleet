@@ -323,13 +323,11 @@ impl Point {
 
     /// Return the distance between this point and another point
     pub fn distance(&self, other: Self) -> f32 {
-        let dist = ( ( ((other.0 - self.0)).powi(2))
+        ( ( ((other.0 - self.0)).powi(2))
              + 
         ( ((other.1 - self.1)).powi(2))
         )
-        .sqrt();
-        println!("Distance is {}", dist);
-        dist
+        .sqrt()
     }
 }
 
@@ -488,9 +486,8 @@ mod tests {
         assert_eq!(quad.insert(Point(0., 1.), 100), Ok(()));
         quad.insert(Point(5., 1.), 200).unwrap();
         quad.insert(Point(57., 57.), 1231).unwrap();
-        let neighbors = quad.neighbors(Point(13., 10.), 200.);
+        let neighbors = quad.neighbors(Point(13., 10.), 16.);
         let mut neighbors = neighbors.iter().map(|(point, _)| *point).collect::<Vec<Point>>();
-        panic!("{:?}", neighbors);
         neighbors.sort_by(|this, next| {
             this.partial_cmp(next).unwrap_or(std::cmp::Ordering::Equal)
         });

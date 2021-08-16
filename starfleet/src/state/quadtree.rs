@@ -79,10 +79,10 @@ impl Branch {
     }
 
     /// Get the neighbors within a certain radius of a point
-    fn neighbors(&self, pos: Point, radius: u16, neighbors: &mut Vec<(Point, Index)>) {
+    fn neighbors(&self, pos: Point, radius: f32, neighbors: &mut Vec<(Point, Index)>) {
         let search_bb = Rect(
-            Point(pos.x().saturating_sub(radius), pos.y().saturating_sub(radius)), 
-            Point(pos.x().saturating_add(radius), pos.y().saturating_add(radius))
+            Point(pos.x() - radius, pos.y() - radius), 
+            Point(pos.x() + radius, pos.y() + radius)
         );
         //Make sure this branch actually can contain a point in the search area
         if self.bb.intersects(search_bb) {
@@ -107,7 +107,7 @@ enum Dir {
 impl Dir {
     /// Return the given [direction](Dir) of this [Rect]
     #[inline]
-    const fn of(&self, rect: Rect) -> Rect {
+    fn of(&self, rect: Rect) -> Rect {
         match self {
             Self::NW => rect.nw(),
             Self::NE => rect.ne(),
@@ -184,11 +184,11 @@ impl Node {
     }
 
     /// Get all neighbors `radius` units from `pos`
-    fn neighbors(&self, pos: Point, radius: u16, neighbors: &mut Vec<(Point, Index)>) {
+    fn neighbors(&self, pos: Point, radius: f32, neighbors: &mut Vec<(Point, Index)>) {
         match self {
             Self::Branch(branch) => branch.neighbors(pos, radius, neighbors),
             Self::Leaf((leaf_pos, idx)) => {
-                if leaf_pos.distance(pos) as u16 <= radius {
+                if leaf_pos.distance(pos) <= radius {
                     neighbors.push((*leaf_pos, *idx))
                 }
             }
@@ -216,7 +216,7 @@ impl<T> QuadTree<T> {
     }
 
     /// Get a list of all neighbors by searching in a circle around a point
-    pub fn neighbors(&self, pos: Point, radius: u16) -> Vec<(Point, Index)> {
+    pub fn neighbors(&self, pos: Point, radius: f32) -> Vec<(Point, Index)> {
         let mut neighbors = Vec::new();
         self.root.neighbors(pos, radius, &mut neighbors); //Search root for neighbors
         neighbors
@@ -307,25 +307,25 @@ impl<T: fmt::Display> fmt::Display for QuadTree<T> {
 }
 
 /// The `Point` struct stores position in a system or galaxy
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct Point(pub u16, pub u16);
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub struct Point(pub f32, pub f32);
 
 impl Point {
     #[inline(always)]
-    pub const fn x(&self) -> u16 {
+    pub const fn x(&self) -> f32 {
         self.0
     }
 
     #[inline(always)]
-    pub const fn y(&self) -> u16 {
+    pub const fn y(&self) -> f32 {
         self.1
     }
 
     /// Return the distance between this point and another point
     pub fn distance(&self, other: Self) -> f32 {
-        ( ((other.0.max(self.0).saturating_sub(other.0.min(self.0))).pow(2) as f32)
+        ( ((other.0 - self.0)).powi(2))
              + 
-        ((other.1.max(self.1).saturating_sub(other.1.min(self.1))).pow(2) as f32) )
+        ( ((other.1 - self.1)).powi(2))
         .sqrt()
     }
 }
@@ -361,7 +361,7 @@ impl_op!(/, DivAssign, div_assign -assign);
 /// ## Gurantees
 /// The first [Point] must always be lower and further left than the second
 /// [Point]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct Rect(pub Point, pub Point);
 
 impl Rect {
@@ -381,10 +381,10 @@ impl Rect {
     }
     /// Get the area of this rectangle
     #[inline(always)]
-    pub const fn area(&self) -> u32 {
+    pub fn area(&self) -> f32 {
         let len = self.0.x() - self.1.x();
         let height = self.0.y() - self.1.y();
-        len as u32 * height as u32
+        len * height
     }
 
     /// Get the lowest and leftmost point
@@ -401,15 +401,15 @@ impl Rect {
 
 
     /// Get the north western quarter of this rectangle
-    pub const fn nw(&self) -> Rect {
+    pub fn nw(&self) -> Rect {
         Rect(
-            Point(self.low().x(), self.low().y() + (self.height() / 2)), 
-            Point(self.high().x() - (self.len() / 2), self.high().y())
+            Point(self.low().x(), self.low().y() + (self.height() / 2f32)), 
+            Point(self.high().x() - (self.len() / 2f32), self.high().y())
         )
     }
 
     /// Get the north eastern quarter of this rectangle
-    pub const fn ne(&self) -> Rect {
+    pub fn ne(&self) -> Rect {
         Rect(
             self.center(), 
             self.high()
@@ -417,9 +417,9 @@ impl Rect {
     }
 
     /// Get the south eastern quarter of this rectangle
-    pub const fn se(&self) -> Rect {
+    pub fn se(&self) -> Rect {
         let center = self.center();
-        let half_height = self.height() / 2;
+        let half_height = self.height() / 2f32;
         Rect(
             Point(center.x(), center.y() - half_height), 
             Point(self.high().x(), self.high().y() - half_height)
@@ -427,7 +427,7 @@ impl Rect {
     }
 
     /// Get the south western quarter of this rectangle
-    pub const fn sw(&self) -> Rect {
+    pub fn sw(&self) -> Rect {
         Rect(
             self.low(), 
             self.center()
@@ -436,30 +436,30 @@ impl Rect {
 
 
     /// Return the center of this rectangle
-    pub const fn center(&self) -> Point {
-        Point(self.low().x() + (self.len() / 2), self.low().y() + (self.height() / 2))
+    pub fn center(&self) -> Point {
+        Point(self.low().x() + (self.len() / 2f32), self.low().y() + (self.height() / 2f32))
     }
 
     /// Get the length of this rectangle
     #[inline(always)]
-    pub const fn len(&self) -> u16 {
+    pub fn len(&self) -> f32 {
         self.1.x() - self.0.x()
     }
 
     /// Get the height of this rectangle
     #[inline(always)]
-    pub const fn height(&self) -> u16 {
+    pub fn height(&self) -> f32 {
         self.1.y() - self.0.y()
     }
 
     /// Check if this rectangle contains a point
-    pub const fn contains(&self, point: Point) -> bool {
+    pub fn contains(&self, point: Point) -> bool {
         point.x() >= self.low().x() && point.y() >= self.low().y() && 
         point.x() <= self.high().x() && point.y() <= self.high().y()
     }
 
     /// Check if one [Rect] intersects with another
-    pub const fn intersects(&self, other: Rect) -> bool {
+    pub fn intersects(&self, other: Rect) -> bool {
         self.contains(other.0) || self.contains(other.1)
     }
 }
@@ -481,16 +481,18 @@ mod tests {
     use super::*;
     #[test]
     pub fn test_insert() {
-        let mut quad = QuadTree::new(Rect::new(Point(0, 0), Point(100, 100)));
-        assert_eq!(quad.insert(Point(0, 1), 100), Ok(()));
-        quad.insert(Point(5, 1), 200).unwrap();
-        quad.insert(Point(57, 57), 1231).unwrap();
-        let neighbors = quad.neighbors(Point(2, 3), 5);
+        let mut quad = QuadTree::new(Rect::new(Point(0., 0.), Point(100., 100.)));
+        assert_eq!(quad.insert(Point(0., 1.), 100), Ok(()));
+        quad.insert(Point(5., 1.), 200).unwrap();
+        quad.insert(Point(57., 57.), 1231).unwrap();
+        let neighbors = quad.neighbors(Point(2., 3.), 5.);
         let mut neighbors = neighbors.iter().map(|(point, _)| *point).collect::<Vec<Point>>();
-        neighbors.sort();
+        neighbors.sort_by(|this, next| {
+            this.partial_cmp(next).unwrap_or(std::cmp::Ordering::Equal)
+        });
         assert_eq!(neighbors, vec![
-            Point(0, 1),
-            Point(5, 1)
+            Point(0., 1.),
+            Point(5., 1.)
         ]);
     }
 }

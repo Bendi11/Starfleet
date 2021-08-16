@@ -1,6 +1,7 @@
 //! Traits for maintaining a uniform interface to procedurally generate entities
 //! when starting a new game
 
+
 /// Trait defining a common interface for procedural generation.
 /// Trait used to define an interface only to encourage an
 /// organized implementation of procedural generation
@@ -17,4 +18,3 @@ pub trait ProcGenSeeded {
     /// Procedurally generate a version of `Self` using the passed `Seed` type
     fn generate_seeded(seed: Self::Seed) -> Self;
 }
-

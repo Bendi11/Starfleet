@@ -8,6 +8,8 @@ use quadtree::QuadTree;
 use indexmap::IndexMap;
 use legion::Entity;
 
+use crate::gen::ProcGen;
+
 /// The `State` struct holds all elements of global game state
 #[derive(Debug, Deserialize, Serialize)]
 pub struct State {
@@ -30,4 +32,12 @@ pub struct Galaxy {
     stars: QuadTree<usize>,
     /// A map of star system names to star system data
     star_map: IndexMap<String, StarSystem>,
+}
+
+impl ProcGen for StarSystem {
+    fn generate() -> Self {
+        Self {
+            entities: QuadTree::new(Rect(Point(0., 0.), Point(0., 0.)))
+        }
+    }
 }

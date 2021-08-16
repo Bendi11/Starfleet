@@ -6,7 +6,7 @@ use legion::{Resources, Schedule, World, serialize::Canon};
 use crossbeam_channel::{Receiver, Sender};
 use serde::{Deserialize, Deserializer, Serialize, Serializer, ser::SerializeStruct};
 
-use crate::{event::Event, register};
+use crate::{event::Event, register, state::State};
 
 /// The `Engine` struct handles any events raised by systems, contains all global state, and
 /// is responsible for serializing and deserializing the game state
@@ -18,6 +18,8 @@ pub struct Engine {
     events: Receiver<Event>,
     /// A copy of the event sender for our event channel
     event_sender: Sender<Event>,
+    /// All global game state
+    state: State,
 }
 
 /// The `Schedules` struct holds a [Schedule](legion::Schedule) for each event that occurs
@@ -28,17 +30,6 @@ pub struct Schedules {
 }
 
 impl Engine {
-    /// Returns a new Engine with no entities or systems
-    #[inline]
-    pub fn new_empty() -> Self {
-        let (send, rec) = crossbeam_channel::unbounded();
-        Self {
-            world: World::default(),
-            events: rec,
-            event_sender: send,
-        }
-    }
-    
     /// Run the main event loop
     pub fn run(&mut self) {
         let mut schedules = register::register_systems(); //Register all system functions
@@ -72,6 +63,7 @@ impl Serialize for Engine {
 
         let mut state = serializer.serialize_struct("Engine", 1)?;
         state.serialize_field("world", &serializable_world)?;
+        state.serialize_field("state", &self.state)?;
         state.end()
     }
 }
@@ -82,10 +74,10 @@ impl<'de> Deserialize<'de> for Engine {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
             D: serde::Deserializer<'de> {
-        const FIELDS: &[&str] = &["world"];
+        const FIELDS: &[&str] = &["world", "state"];
             
         //Deserialize keys in a key-value map 
-        enum Field { World }
+        enum Field { World, State }
         impl<'de> Deserialize<'de> for Field {
             fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where
@@ -94,7 +86,7 @@ impl<'de> Deserialize<'de> for Engine {
                 impl<'de> serde::de::Visitor<'de> for FieldVisitor {
                     type Value = Field;
                     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                        formatter.write_str("`world`")
+                        formatter.write_str("`world`, `state`")
                     }
 
                     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -102,6 +94,7 @@ impl<'de> Deserialize<'de> for Engine {
                             E: serde::de::Error, {
                         match v {
                             "world" => Ok(Field::World),
+                            "state" => Ok(Field::State),
                             _ => Err(serde::de::Error::unknown_field(v, FIELDS))
                         }
                     }
@@ -127,12 +120,14 @@ impl<'de> Deserialize<'de> for Engine {
                 let entity_deserializer = Canon::default();
                 let deserializable= registry.as_deserialize(&entity_deserializer);
                 let world = seq.next_element_seed(deserializable)?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
+                let state = seq.next_element()?.ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
 
                 let (send, rec) = crossbeam_channel::unbounded();
                 Ok(Engine {
                     world,
                     events: rec,
-                    event_sender: send
+                    event_sender: send,
+                    state
                 })
             }
 
@@ -140,33 +135,41 @@ impl<'de> Deserialize<'de> for Engine {
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
             where
                     A: serde::de::MapAccess<'de>, {
-                let registry = register::register_components();
-                let entity_deserializer = Canon::default();
-                let deserializable= registry.as_deserialize(&entity_deserializer);
-
                 let mut world = None;
+                let mut state = None;
+
                 while let Some(key) = map.next_key()? {
                     match key {
                         Field::World => {
                             if world.is_some() {
                                 return Err(serde::de::Error::duplicate_field("world"))
                             }
+                            let registry = register::register_components();
+                            let entity_deserializer = Canon::default();
+                            let deserializable= registry.as_deserialize(&entity_deserializer);
                             world = Some(map.next_value_seed(deserializable)?);
-                            break
+                        },
+                        Field::State => {
+                            if state.is_some() {
+                                return Err(serde::de::Error::duplicate_field("state"))
+                            }
+                            state = Some(map.next_value()?);
                         }
                     }
                 }
                 let world = world.ok_or_else(|| serde::de::Error::missing_field("world"))?;
+                let state = state.ok_or_else(|| serde::de::Error::missing_field("state"))?;
                 
                 let (send, rec) = crossbeam_channel::unbounded();
                 Ok(Engine {
                     world,
                     events: rec,
-                    event_sender: send
+                    event_sender: send,
+                    state
                 })
             }
         }
 
-        deserializer.deserialize_struct("Engine", &["world"], EngineVisitor)
+        deserializer.deserialize_struct("Engine", &["world", "state"], EngineVisitor)
     }
 }

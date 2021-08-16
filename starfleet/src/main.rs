@@ -5,10 +5,8 @@ pub mod state;
 pub mod event;
 pub mod component;
 pub mod system;
+pub mod gen;
 
 fn main() {
-    use engine::Engine;
 
-    let mut engine = Engine::new_empty();
-    engine.run();
 }

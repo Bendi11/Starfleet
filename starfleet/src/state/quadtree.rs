@@ -155,7 +155,13 @@ impl Node {
                 }
                 let mut split = Self::branch(area);
                 split.insert(*old_point, *old_handle, area); //Insert the old contained value of the leaf
-                split.insert(pos, val, area)
+                if split.insert(pos, val, area) {
+                    *self = split;
+                    true
+                } else {
+                    false
+                }
+                
             }
         }
     }
@@ -272,6 +278,7 @@ mod tests {
     pub fn test_insert() {
         let mut quad = QuadTree::new(Rect::new(Point(0, 0), Point(100, 100)));
         quad.insert(Point(0, 1), 100).unwrap();
+        quad.insert(Point(1, 14), 1231).unwrap();
         panic!("{}", quad);
     }
 }

@@ -143,8 +143,8 @@ impl Rect {
 
     /// Check if this rectangle contains a point
     pub const fn contains(&self, point: Point) -> bool {
-        point.x() >= self.0.x() && point.y() >= self.1.y() && 
-        point.x() <= self.1.x() && point.y() <= self.1.y()
+        point.x() >= self.low().x() && point.y() >= self.low().y() && 
+        point.x() <= self.high().x() && point.y() <= self.high().y()
     }
 }
 

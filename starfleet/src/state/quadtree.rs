@@ -77,6 +77,21 @@ impl Branch {
             }
         }
     }
+
+    /// Get the neighbors within a certain radius of a point
+    fn neighbors(&self, pos: Point, radius: u16, neighbors: &mut Vec<(Point, Index)>) {
+        let search_bb = Rect(
+            Point(pos.x().saturating_sub(radius), pos.y().saturating_sub(radius)), 
+            Point(pos.x().saturating_add(radius), pos.y().saturating_add(radius))
+        );
+        //Make sure this branch actually can contain a point in the search area
+        if self.bb.intersects(search_bb) {
+            //Search all child nodes for neighbors if we are in the search area
+            for child in self.children.iter().flatten() {
+                child.neighbors(pos, radius, neighbors)
+            }
+        }
+    }
 }
 
 /// A direction for the child nodes of a [Branch]
@@ -165,6 +180,18 @@ impl Node {
             }
         }
     }
+
+    /// Get all neighbors `radius` units from `pos`
+    fn neighbors(&self, pos: Point, radius: u16, neighbors: &mut Vec<(Point, Index)>) {
+        match self {
+            Self::Branch(branch) => branch.neighbors(pos, radius, neighbors),
+            Self::Leaf((leaf_pos, idx)) => {
+                if leaf_pos.distance(pos) as u16 <= radius {
+                    neighbors.push((*leaf_pos, *idx))
+                }
+            }
+        }
+    }
 }
 
 impl<T> QuadTree<T> {
@@ -185,6 +212,13 @@ impl<T> QuadTree<T> {
             false => Err(self.arena.remove(handle).unwrap())
         }
     }
+
+    /// Get a list of all neighbors by searching in a circle around a point
+    pub fn neighbors(&self, pos: Point, radius: u16) -> Vec<(Point, Index)> {
+        let mut neighbors = Vec::new();
+        self.root.neighbors(pos, radius, &mut neighbors); //Search root for neighbors
+        neighbors
+    }
 }
 
 use std::fmt;
@@ -201,62 +235,61 @@ impl fmt::Display for Dir {
 impl<T: fmt::Debug> QuadTree<T> {
     /// Write the given branch to the formatter
     fn write_branch(&self, branch: &Branch, f: &mut fmt::Formatter<'_>, spaceno: u16) -> fmt::Result {
-        for _ in 0..spaceno {
-            write!(f, " ")?
-        }
-
-        writeln!(f, "Bounding Box: {}", branch.bb)?;
         for (dir, child) in branch.children.iter().enumerate() {
+            for _ in 0..spaceno {
+                write!(f, " ")?
+            }
+            write!(f, "[{}]{}: ", Dir::from(dir as u8).of(branch.bb), Dir::from(dir as u8))?;
             match child {
                 Some(child) => match child {
-                    Node::Branch(other) => self.write_branch(other, f, spaceno + 1)?,
+                    Node::Branch(other) => {
+                        writeln!(f)?;
+                        self.write_branch(other, f, spaceno + 1)?
+                    }
                     Node::Leaf((pos, data)) => {
-                        for _ in 0..spaceno {
-                            write!(f, " ")?
-                        }
-                        writeln!(f, "{}: {} [{:?}]", Dir::from(dir as u8), pos, self.arena[*data])?;
+                        write!(f, "{} [{:?}]", pos, self.arena[*data])?;
                     }
                 },
                 None => {
                     for _ in 0..spaceno {
                         write!(f, " ")?
                     }
-                    writeln!(f, "{}: <none>", Dir::from(dir as u8))?;
+                    write!(f, "<none>")?;
                 }
             }
+            writeln!(f)?;
         }
-
         Ok(())
     }
 }
 impl<T: fmt::Display> QuadTree<T> {
     /// Write the given branch to the formatter
     fn write_branch_display(&self, branch: &Branch, f: &mut fmt::Formatter<'_>, spaceno: u16) -> fmt::Result {
-        for _ in 0..spaceno {
-            write!(f, " ")?
-        }
-
-        writeln!(f, "Bounding Box: {}", branch.bb)?;
         for (dir, child) in branch.children.iter().enumerate() {
+            for _ in 0..spaceno {
+                write!(f, " ")?
+            }
+            write!(f, "[{}]{}: ", Dir::from(dir as u8).of(branch.bb), Dir::from(dir as u8))?;
             match child {
                 Some(child) => match child {
-                    Node::Branch(other) => self.write_branch_display(other, f, spaceno + 1)?,
+                    Node::Branch(other) => {
+                        writeln!(f)?;
+                        self.write_branch_display(other, f, spaceno + 1)?
+                    }
                     Node::Leaf((pos, data)) => {
-                        for _ in 0..spaceno {
-                            write!(f, " ")?
-                        }
-                        writeln!(f, "{}: {} [{}]", Dir::from(dir as u8), pos, self.arena[*data])?;
+                        
+                        write!(f, "{} [{}]", pos, self.arena[*data])?;
                     }
                 },
                 None => {
                     for _ in 0..spaceno {
                         write!(f, " ")?
                     }
-                    writeln!(f, "{}: <none>", Dir::from(dir as u8))?;
+                    write!(f, "<none>")?;
                 }
             }
+            writeln!(f)?;
         }
-
         Ok(())
     }
 }
@@ -277,8 +310,15 @@ mod tests {
     #[test]
     pub fn test_insert() {
         let mut quad = QuadTree::new(Rect::new(Point(0, 0), Point(100, 100)));
-        quad.insert(Point(0, 1), 100).unwrap();
-        quad.insert(Point(1, 14), 1231).unwrap();
-        panic!("{}", quad);
+        assert_eq!(quad.insert(Point(0, 1), 100), Ok(()));
+        quad.insert(Point(5, 1), 200).unwrap();
+        quad.insert(Point(57, 57), 1231).unwrap();
+        let neighbors = quad.neighbors(Point(2, 3), 5);
+        let mut neighbors = neighbors.iter().map(|(point, _)| *point).collect::<Vec<Point>>();
+        neighbors.sort();
+        assert_eq!(neighbors, vec![
+            Point(0, 1),
+            Point(5, 1)
+        ]);
     }
 }

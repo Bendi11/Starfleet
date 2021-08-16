@@ -17,6 +17,14 @@ impl Point {
     pub const fn y(&self) -> u16 {
         self.1
     }
+
+    /// Return the distance between this point and another point
+    pub fn distance(&self, other: Self) -> f32 {
+        ( ((other.0.max(self.0).saturating_sub(other.0.min(self.0))).pow(2) as f32)
+             + 
+        ((other.1.max(self.1).saturating_sub(other.1.min(self.1))).pow(2) as f32) )
+        .sqrt()
+    }
 }
 
 macro_rules! impl_op {
@@ -146,9 +154,18 @@ impl Rect {
         point.x() >= self.low().x() && point.y() >= self.low().y() && 
         point.x() <= self.high().x() && point.y() <= self.high().y()
     }
-}
 
+    /// Check if one [Rect] intersects with another
+    pub const fn intersects(&self, other: Rect) -> bool {
+        self.contains(other.0) || self.contains(other.1)
+    }
+}
 use std::fmt;
+
+use indexmap::IndexMap;
+use legion::Entity;
+
+use self::quadtree::QuadTree;
 impl fmt::Display for Point {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "({}, {})", self.0, self.1)
@@ -163,10 +180,14 @@ impl fmt::Display for Rect {
 /// A star system contains any entities that are currently in the star system, and
 /// is contained in the [Galaxy] struct
 pub struct StarSystem {
-
+    /// A map of entities to their locations
+    entities: QuadTree<Entity>,
 }
 
-/// The `Galaxy` struct tracks where each star system is
+/// The `Galaxy` struct tracks where all star systems are in the game
 pub struct Galaxy {
-
+    /// A virtual map of star system indexes in the `star_map` hashmap
+    stars: QuadTree<usize>,
+    /// A map of star system names to star system data
+    star_map: IndexMap<String, StarSystem>,
 }

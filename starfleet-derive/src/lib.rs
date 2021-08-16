@@ -61,10 +61,10 @@ impl Parse for Attrs {
 
 /// Register this as a component type for serialization and deserialization
 /// ## Example
-/// ```rust,no_run
+/// ```ignore
 /// #[component]
 /// pub struct Health {
-///     f32 health
+///     health: f32
 /// }
 /// ```
 ///
@@ -72,10 +72,10 @@ impl Parse for Attrs {
 /// bugs with serialization occur. If the problem does arise, use the `name = val` syntax to specify a different name for serializing and
 /// deserializing the component
 ///
-/// ```rust,no_run
+/// ```ignore
 /// #[component(name = "Health1")]
 /// pub struct Health {
-///     f32 health
+///     health: f32
 /// }
 /// ```
 #[proc_macro_attribute]

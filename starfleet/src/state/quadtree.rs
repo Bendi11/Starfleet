@@ -2,6 +2,7 @@
 use generational_arena::{Arena, Index};
 
 use super::{Rect, Point};
+use serde::{Serialize, Deserialize};
 
 /// The `Branch` struct is used in the [Branch](Node::Branch) variant of the [Node] enum,
 /// and contains a bounding box for the contained nodes and the child nodes
@@ -16,6 +17,7 @@ use super::{Rect, Point};
 ///   ^^^^^^^^^
 /// ```
 ///
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Branch {
     /// The bounding box of this branch
     bb: Rect,
@@ -130,6 +132,7 @@ impl From<u8> for Dir {
 
 /// One node in a [quad tree](QuadTree), either containing more children or 
 /// a leaf node
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Node {
     /// A branch in the tree, containing children nodes
     Branch(Branch),
@@ -138,6 +141,7 @@ pub enum Node {
 }
 
 /// The `QuadTree` struct is used to hold a record of locations on a 2D coordinate grid
+#[derive(Serialize, Deserialize)]
 pub struct QuadTree<T> {
     /// Arena allocator we store all nodes in
     arena: Arena<T>,

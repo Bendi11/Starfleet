@@ -2,9 +2,10 @@
 //! contained in the engine
 
 pub mod quadtree;
+use serde::{Serialize, Deserialize};
 
 /// The `Point` struct stores position in a system or galaxy
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Point(pub u16, pub u16);
 
 impl Point {
@@ -58,7 +59,7 @@ impl_op!(/, DivAssign, div_assign -assign);
 /// ## Gurantees
 /// The first [Point] must always be lower and further left than the second
 /// [Point]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct Rect(pub Point, pub Point);
 
 impl Rect {
@@ -179,12 +180,14 @@ impl fmt::Display for Rect {
 
 /// A star system contains any entities that are currently in the star system, and
 /// is contained in the [Galaxy] struct
+#[derive(Debug, Deserialize, Serialize)]
 pub struct StarSystem {
     /// A map of entities to their locations
     entities: QuadTree<Entity>,
 }
 
 /// The `Galaxy` struct tracks where all star systems are in the game
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Galaxy {
     /// A virtual map of star system indexes in the `star_map` hashmap
     stars: QuadTree<usize>,

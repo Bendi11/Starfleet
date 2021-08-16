@@ -148,6 +148,17 @@ impl Rect {
     }
 }
 
+use std::fmt;
+impl fmt::Display for Point {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.0, self.1)
+    }
+}
+impl fmt::Display for Rect {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {}", self.0, self.1)
+    }
+}
 
 /// A star system contains any entities that are currently in the star system, and
 /// is contained in the [Galaxy] struct

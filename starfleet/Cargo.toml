@@ -9,7 +9,7 @@ build = "build.rs" # Sets cfg flags depending on if linkme or inventory is used
 starfleet-derive = { path = "../starfleet-derive" }
 legion = "0.4" # Entity Component System 
 serde = "1.0" # Serialzing and deserializing legion worlds
-crossbeam-channel = "0.5" # Event handling 
+# crossbeam-channel = "0.5" # Event handling 
 rmp-serde = "0.15" # Serializing / Deserializing game state to / from a save file
 generational-arena = {  version = "0.2", features = ["serde"] } # Arena allocator for data structures
 indexmap = {version = "1.7", features = ["serde"] } # Keeping a hashmap that can use indices for star systems

@@ -2,7 +2,8 @@
 //! handles any events that are raised by systems, and can save / load the game state to a
 //! file
 
-use crossbeam_channel::{Receiver, Sender};
+//use crossbeam_channel::{Receiver, Sender};
+use std::sync::mpsc::{Receiver, Sender, channel};
 use legion::{serialize::Canon, Resources, Schedule, World};
 use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -132,7 +133,7 @@ impl<'de> Deserialize<'de> for Engine {
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
 
-                let (send, rec) = crossbeam_channel::unbounded();
+                let (send, rec) = channel();
                 Ok(Engine {
                     world,
                     events: rec,
@@ -171,7 +172,7 @@ impl<'de> Deserialize<'de> for Engine {
                 let world = world.ok_or_else(|| serde::de::Error::missing_field("world"))?;
                 let state = state.ok_or_else(|| serde::de::Error::missing_field("state"))?;
 
-                let (send, rec) = crossbeam_channel::unbounded();
+                let (send, rec) = channel();
                 Ok(Engine {
                     world,
                     events: rec,

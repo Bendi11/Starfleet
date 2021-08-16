@@ -1,6 +1,6 @@
 //! The `register` module provides platform-independent component and system registration for the `legion` crate
-use legion::serialize::Registry;
 use crate::engine::Schedules;
+use legion::serialize::Registry;
 
 #[cfg(use_linkme)]
 #[::linkme::distributed_slice]
@@ -10,15 +10,15 @@ pub static COMPONENT_HASHES: [fn(&mut Registry<u64>)] = [..];
 #[::linkme::distributed_slice]
 pub static SYSTEM_REGISTRARS: [fn(&mut SchedulesBuilder)] = [..];
 
-/// A builder for the `Schedules` struct 
+/// A builder for the `Schedules` struct
 pub struct SchedulesBuilder {
-    pub tick: legion::systems::Builder
+    pub tick: legion::systems::Builder,
 }
 
 impl SchedulesBuilder {
     pub fn build(mut self) -> Schedules {
         Schedules {
-            tick: self.tick.build()
+            tick: self.tick.build(),
         }
     }
 }
@@ -55,12 +55,11 @@ pub fn register_components() -> Registry<u64> {
     registry
 }
 
-
 /// Register all systems using the `linkme` crate
 #[cfg(use_linkme)]
 pub fn register_systems() -> Schedules {
     let mut schedules = SchedulesBuilder {
-        tick: legion::Schedule::builder()
+        tick: legion::Schedule::builder(),
     };
     for system_registrar in SYSTEM_REGISTRARS {
         system_registrar(&mut schedules);
@@ -72,7 +71,7 @@ pub fn register_systems() -> Schedules {
 #[cfg(use_inventory)]
 pub fn register_systems() -> Schedules {
     let mut schedules = SchedulesBuilder {
-        tick: legion::Schedule::builder()
+        tick: legion::Schedule::builder(),
     };
     for system_registrar in inventory::iter::<SystemRegistrarFunction> {
         system_registrar(&mut schedules);

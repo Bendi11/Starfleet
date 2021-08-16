@@ -5,7 +5,10 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use syn::parse::Parse;
 use syn::spanned::Spanned;
-use syn::{Item, ItemEnum, ItemFn, ItemStruct, ItemType, ItemUnion, Token, parse_macro_input, parse::Parser};
+use syn::{
+    parse::Parser, parse_macro_input, Item, ItemEnum, ItemFn, ItemStruct, ItemType, ItemUnion,
+    Token,
+};
 
 /// From [here](http://www.isthe.com/chongo/tech/comp/fnv/)
 const FNV_OFFSET_BASIS: u64 = 14695981039346656037u64;
@@ -168,12 +171,12 @@ pub fn on_event(attr: TokenStream, mut item: TokenStream) -> TokenStream {
             fn #register_fn_name (schedules: &mut crate::register::SchedulesBuilder) {
                 schedules.#event_name.add_system( #system_fn_name() );
             }
-    
+
             #[cfg(use_inventory)]
             ::inventory::submit! {
                 crate::register::SystemRegistrarFunction( #register_fn_name )
             }
-    
+
             #[cfg(use_linkme)]
             #[::linkme::distributed_slice(crate::register::SYSTEM_REGISTRARS)]
             static #static_name: fn(&mut crate::register::SchedulesBuilder) = #register_fn_name;

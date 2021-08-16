@@ -8,4 +8,3 @@ pub struct Name {
     /// The name of the entity
     pub name: String,
 }
-

@@ -2,11 +2,11 @@
 //! contained in the engine
 
 pub mod quadtree;
-use serde::{Serialize, Deserialize};
-pub use quadtree::{Point, Rect};
-use quadtree::QuadTree;
 use indexmap::IndexMap;
 use legion::Entity;
+use quadtree::QuadTree;
+pub use quadtree::{Point, Rect};
+use serde::{Deserialize, Serialize};
 
 use crate::gen::ProcGen;
 
@@ -37,7 +37,7 @@ pub struct Galaxy {
 impl ProcGen for StarSystem {
     fn generate() -> Self {
         Self {
-            entities: QuadTree::new(Rect(Point(0., 0.), Point(0., 0.)))
+            entities: QuadTree::new(Rect(Point(0., 0.), Point(0., 0.))),
         }
     }
 }

@@ -1,12 +1,10 @@
 pub use starfleet_derive::{component, on_event};
-pub mod register;
-pub mod engine;
-pub mod state;
-pub mod event;
 pub mod component;
-pub mod system;
+pub mod engine;
+pub mod event;
 pub mod gen;
+pub mod register;
+pub mod state;
+pub mod system;
 
-fn main() {
-
-}
+fn main() {}

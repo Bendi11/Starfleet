@@ -11,11 +11,13 @@ use serde::{Deserialize, Serialize};
 use crate::gen::ProcGen;
 
 /// The `State` struct holds all elements of global game state
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Default)]
 pub struct State {
     /// The container for all star systems
     galaxy: Galaxy,
 }
+
+
 
 /// A star system contains any entities that are currently in the star system, and
 /// is contained in the [Galaxy] struct
@@ -32,6 +34,15 @@ pub struct Galaxy {
     stars: QuadTree<usize>,
     /// A map of star system names to star system data
     star_map: IndexMap<String, StarSystem>,
+}
+
+impl Default for Galaxy {
+    fn default() -> Self {
+        Self {
+            stars: QuadTree::new(Rect(Point(0., 0.), Point(10000., 10000.))),
+            star_map: IndexMap::new()
+        }
+    }
 }
 
 impl ProcGen for StarSystem {

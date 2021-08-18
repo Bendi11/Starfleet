@@ -488,6 +488,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "starfleet-cli"
+version = "0.1.0"
+dependencies = [
+ "starfleet",
+]
+
+[[package]]
 name = "starfleet-derive"
 version = "0.1.0"
 dependencies = [

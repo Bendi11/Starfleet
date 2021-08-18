@@ -2,5 +2,6 @@
 
 members = [
     "starfleet-derive",
-    "starfleet"
+    "starfleet",
+    "starfleet-cli",
 ]

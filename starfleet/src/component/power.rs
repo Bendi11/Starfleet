@@ -8,6 +8,6 @@ use uom::si::f32::Power;
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Powered {
     /// The power availible to this entity
-    pwr: Power,
+    pub pwr: Power,
 }
 

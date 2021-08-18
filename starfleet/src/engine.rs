@@ -14,7 +14,7 @@ use crate::{event::Event, register, state::State};
 #[derive(Debug)]
 pub struct Engine {
     /// The [World] that contains all entities and component data
-    world: World,
+    pub world: World,
     /// The event queue that all events are sent down
     events: Receiver<Event>,
     /// A copy of the event sender for our event channel
@@ -31,6 +31,17 @@ pub struct Schedules {
 }
 
 impl Engine {
+    /// Create a totally empty world, used for debugging
+    pub fn new_empty() -> Self {
+        let (tx, rx) = channel();
+        Self {
+            world: World::default(),
+            events: rx,
+            event_sender: tx,
+            state: State::default()
+        }
+    }
+
     /// Run the main event loop
     pub fn run(&mut self) {
         let mut schedules = register::register_systems(); //Register all system functions

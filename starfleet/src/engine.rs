@@ -3,7 +3,7 @@
 //! file
 
 //use crossbeam_channel::{Receiver, Sender};
-use std::sync::mpsc::{Receiver, Sender, channel};
+use std::sync::{mpsc::{Receiver, Sender, channel}, atomic::{AtomicBool, self}, Arc};
 use legion::{serialize::Canon, Resources, Schedule, World};
 use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -14,11 +14,11 @@ use crate::{event::Event, register, state::State};
 #[derive(Debug)]
 pub struct Engine {
     /// The [World] that contains all entities and component data
-    pub world: World,
+    world: World,
     /// The event queue that all events are sent down
     events: Receiver<Event>,
     /// A copy of the event sender for our event channel
-    event_sender: Sender<Event>,
+    pub event_sender: Sender<Event>,
     /// All global game state
     state: State,
 }
@@ -47,18 +47,28 @@ impl Engine {
         let mut schedules = register::register_systems(); //Register all system functions
         let mut resource = Resources::default();
         resource.insert::<Sender<Event>>(self.event_sender.clone());
-
         let sender = self.event_sender.clone();
-        std::thread::spawn(move || loop {
-            std::thread::sleep(std::time::Duration::from_millis(60));
-            sender.send(Event::Tick).unwrap();
+        
+        let exit = Arc::new(AtomicBool::new(false));
+        let exit_rec = exit.clone();
+        let handle = std::thread::spawn(move ||  {
+            loop {
+                std::thread::sleep(std::time::Duration::from_millis(100));
+                sender.send(Event::Tick).unwrap();
+                if exit_rec.load(atomic::Ordering::Relaxed) {
+                    break
+                }
+            }
         });
 
         loop {
             match self.events.recv().unwrap() {
                 Event::Tick => schedules.tick.execute(&mut self.world, &mut resource),
+                Event::Exit => break
             }
         }
+        exit.store(true, atomic::Ordering::Relaxed);
+        handle.join().unwrap();
     }
 }
 

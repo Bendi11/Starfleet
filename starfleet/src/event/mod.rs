@@ -4,5 +4,8 @@
 /// The `Event` enum is the type that all events are converted to so they can be sent
 #[derive(Debug, Clone)]
 pub enum Event {
+    /// Fired when CLI thread wants to exit
+    Exit,
+    /// Fired once every tenth of a second
     Tick,
 }

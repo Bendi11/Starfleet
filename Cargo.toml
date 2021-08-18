@@ -5,3 +5,7 @@ members = [
     "starfleet",
     "starfleet-cli",
 ]
+
+[profile.release]
+lto = true
+codegen-units = 1

@@ -3,8 +3,9 @@
 //! file
 
 //use crossbeam_channel::{Receiver, Sender};
-use std::sync::{mpsc::{Receiver, Sender, channel}, atomic::{AtomicBool, self}, Arc};
+use std::sync::{mpsc::{Receiver, Sender}, atomic::{AtomicBool, self}, Arc};
 use legion::{serialize::Canon, Resources, Schedule, World};
+use parking_lot::Mutex;
 use serde::{ser::SerializeStruct, Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{event::Event, register, state::State};
@@ -15,10 +16,6 @@ use crate::{event::Event, register, state::State};
 pub struct Engine {
     /// The [World] that contains all entities and component data
     world: World,
-    /// The event queue that all events are sent down
-    events: Receiver<Event>,
-    /// A copy of the event sender for our event channel
-    pub event_sender: Sender<Event>,
     /// All global game state
     state: State,
 }
@@ -33,21 +30,18 @@ pub struct Schedules {
 impl Engine {
     /// Create a totally empty world, used for debugging
     pub fn new_empty() -> Self {
-        let (tx, rx) = channel();
         Self {
             world: World::default(),
-            events: rx,
-            event_sender: tx,
             state: State::default()
         }
     }
 
     /// Run the main event loop
-    pub fn run(&mut self) {
+    pub fn run(this: Arc<Mutex<Self>>, sender: Sender<Event>, reciever: Receiver<Event>) {
         let mut schedules = register::register_systems(); //Register all system functions
         let mut resource = Resources::default();
-        resource.insert::<Sender<Event>>(self.event_sender.clone());
-        let sender = self.event_sender.clone();
+        resource.insert::<Sender<Event>>(sender.clone());
+        let sender = sender.clone();
         
         let exit = Arc::new(AtomicBool::new(false));
         let exit_rec = exit.clone();
@@ -59,11 +53,11 @@ impl Engine {
                     break
                 }
             }
-        });
+        });        
 
         loop {
-            match self.events.recv().unwrap() {
-                Event::Tick => schedules.tick.execute(&mut self.world, &mut resource),
+            match reciever.recv().unwrap() {
+                Event::Tick => schedules.tick.execute(&mut this.lock().world, &mut resource),
                 Event::Exit => break
             }
         }
@@ -154,11 +148,8 @@ impl<'de> Deserialize<'de> for Engine {
                     .next_element()?
                     .ok_or_else(|| serde::de::Error::invalid_length(0, &self))?;
 
-                let (send, rec) = channel();
                 Ok(Engine {
                     world,
-                    events: rec,
-                    event_sender: send,
                     state,
                 })
             }
@@ -193,11 +184,8 @@ impl<'de> Deserialize<'de> for Engine {
                 let world = world.ok_or_else(|| serde::de::Error::missing_field("world"))?;
                 let state = state.ok_or_else(|| serde::de::Error::missing_field("state"))?;
 
-                let (send, rec) = channel();
                 Ok(Engine {
                     world,
-                    events: rec,
-                    event_sender: send,
                     state,
                 })
             }

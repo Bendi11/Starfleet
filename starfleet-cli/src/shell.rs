@@ -46,7 +46,7 @@ impl Shell {
                 }   
                 Err(_) => {
                     stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true))?;
-                    stdout.write_all(b"\nError when parsing shell command: quotation marks mismatch\n")?;
+                    stdout.write_all(b"Error when parsing shell command: quotation marks mismatch\n")?;
                     stdout.reset()?;
                     continue
                 }
@@ -61,7 +61,7 @@ impl Shell {
                     Some(prog) => { (prog)(engine.clone(), &words, &mut stdout); },
                     None => {
                         stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true))?;
-                        stdout.write_fmt(format_args!("\nError when running program: Command or program '{}' does not exist\n", &words[0]))?;
+                        stdout.write_fmt(format_args!("Error when running program: Command or program '{}' does not exist\n", &words[0]))?;
                         stdout.reset()?;
                     }
                 }
@@ -70,3 +70,4 @@ impl Shell {
         Ok(())
     }
 }
+

@@ -21,7 +21,3 @@ linkme = "0.2" # Component registration on specific platforms, doesn't use life 
 
 [target.'cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))'.dependencies]
 inventory = "0.1" # For platforms not supporting linkme, use life before main to register components
-
-[profile.release]
-lto = true
-codegen-units = 1

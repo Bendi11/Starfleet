@@ -5,7 +5,6 @@ pub mod event;
 pub mod gen;
 pub mod register;
 pub mod state;
-pub mod unit;
 pub mod system;
 
 fn main() {

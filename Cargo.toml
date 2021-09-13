@@ -1,9 +1,7 @@
 [workspace]
 
 members = [
-    "starfleet-derive",
-    "starfleet",
-    "starfleet-cli",
+    "starfleet-vm"
 ]
 
 [profile.release]

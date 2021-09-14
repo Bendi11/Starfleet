@@ -84,6 +84,12 @@ impl VM {
 
                 OpCode::UADD => op_case!(code, self.regs, +),
                 OpCode::IADD => op_case!(signed code, self.regs, +),
+                OpCode::USUB => op_case!(code, self.regs, -),
+                OpCode::ISUB => op_case!(signed code, self.regs, -),
+                OpCode::UMUL => op_case!(code, self.regs, *),
+                OpCode::IMUL => op_case!(signed code, self.regs, *),
+                OpCode::UDIV => op_case!(code, self.regs, /),
+                OpCode::IDIV => op_case!(signed code, self.regs, /),
             }
         }
 

@@ -36,6 +36,24 @@ pub enum OpCode {
 
     /// Add two signed value from registers arg0-1 and arg0-2 and store the result in arg0-0
     IADD,
+
+    /// Subtract two unsigned values, arg0-1 - arg0-2 and store the result in arg0-0
+    USUB,
+
+    /// Subtract two signed values, arg0-1 - arg0-2 and store the result in arg0-0
+    ISUB,
+    
+    /// Multiply unsiged values arg0-1 by arg0-2 and store the result in arg0-0
+    UMUL,
+
+    /// Multiply signed values arg0-1 by arg0-2 and store the result in arg0-0
+    IMUL,
+
+    /// Unsigned integer divide arg0-2 from arg0-1 and store the result in arg0-0
+    UDIV,
+
+    /// Signed integer divide arg0-2 from arg0-1 and store the result in arg0-0
+    IDIV,
 }
 
 
@@ -54,6 +72,13 @@ impl FromStr for OpCode {
 
             "uadd" => Self::UADD,
             "iadd" => Self::IADD,
+            "usub" => Self::USUB,
+            "isub" => Self::ISUB,
+            "umul" => Self::UMUL,
+            "imul" => Self::IMUL,
+            "udiv" => Self::UDIV,
+            "idiv" => Self::IDIV,
+
             _ => return Err(())
         })
     }

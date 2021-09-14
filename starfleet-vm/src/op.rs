@@ -30,6 +30,12 @@ pub enum OpCode {
     LCDWORD,
     /// Load the 64 bit value specified by args 1, 2, 3, 4, 5, 6, 7, 8 into the register specified by arg 0
     LCQWORD,
+
+    /// Add two unsigned values from registers arg0-1 and arg0-2 and store the result in arg0-0
+    UADD,
+
+    /// Add two signed value from registers arg0-1 and arg0-2 and store the result in arg0-0
+    IADD,
 }
 
 
@@ -39,11 +45,15 @@ impl FromStr for OpCode {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s.to_lowercase().as_str() {
             "halt" => Self::HALT,
+
             "lctiny" => Self::LCTINY,
             "lcbyte" => Self::LCBYTE,
             "lcword" => Self::LCWORD,
             "lcdword" => Self::LCDWORD,
             "lcqword" => Self::LCQWORD,
+
+            "uadd" => Self::UADD,
+            "iadd" => Self::IADD,
             _ => return Err(())
         })
     }

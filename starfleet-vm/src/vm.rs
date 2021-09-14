@@ -16,6 +16,29 @@ pub struct VM {
     regs: [ u64 ; 4 ],
 }
 
+macro_rules! op_case {
+    ($code:expr, $regs:expr, $op:tt) => {
+        {
+            let regs = $code.read_u8()?;
+            let res = regs.pairat(0);
+            let lhs = regs.pairat(1);
+            let rhs = regs.pairat(2);
+
+            $regs[res as usize] = $regs[lhs as usize] $op $regs[rhs as usize];
+        }
+    };
+    (signed $code:expr, $regs:expr, $op:tt) => {
+        {
+            let regs = $code.read_u8()?;
+            let res = regs.pairat(0);
+            let lhs = regs.pairat(1);
+            let rhs = regs.pairat(2);
+
+            $regs[res as usize] = unsafe { mem::transmute::<_, u64>( mem::transmute::<_, i64>($regs[lhs as usize]) $op  mem::transmute::<_, i64>($regs[rhs as usize])) };
+        }
+    }
+}
+
 impl VM {
     /// Create a new VM with the given stack size
     pub fn new(stack_size: usize) -> Self {
@@ -31,6 +54,7 @@ impl VM {
         loop {
             match unsafe { mem::transmute::<_, OpCode>(code.read_u8()?) } {
                 OpCode::HALT => break,
+
                 OpCode::LCTINY => {
                     let arg = code.read_u8()?;
                     let reg = arg.pairat(0);
@@ -57,6 +81,9 @@ impl VM {
                     let val = code.read_u64()?;
                     self.regs[reg as usize] = val;
                 },
+
+                OpCode::UADD => op_case!(code, self.regs, +),
+                OpCode::IADD => op_case!(signed code, self.regs, +),
             }
         }
 

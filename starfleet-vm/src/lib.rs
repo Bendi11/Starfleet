@@ -2,6 +2,10 @@
 //! in starfleet
 
 mod op;
+mod format;
+mod util;
+mod vm;
+
 
 #[cfg(test)]
 mod tests {

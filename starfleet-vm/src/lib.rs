@@ -2,6 +2,7 @@
 //! in starfleet
 
 mod parse;
+mod ast;
 
 #[cfg(test)]
 mod tests {

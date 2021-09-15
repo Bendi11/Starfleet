@@ -1,9 +1,9 @@
 //! Module containing the [Lexer] struct, used to transform an input source
 //! string into a token stream which can then be parsed into an Abstract Syntax
 //! Tree
-use thiserror::Error;
 use std::{str::{CharIndices, FromStr}, iter::Peekable, num::NonZeroU32, fmt};
 
+#[derive(Debug, Clone)]
 pub struct Lexer<'src> {
     /// An iterator over the characters in the source file
     src: CharStream<'src>,
@@ -41,11 +41,50 @@ impl<'src> Lexer<'src> {
 
             '+' | '-' | '*' | '/' | '%' | 
             '&' | '|' | '^' | '~' | 
-            '>' | '<'=> {
-                let op = if let Some(peek) = self.src.peek() {
-                    match (next, *peek) {
+            '>' | '<' |
+            '!' => {
+                let op = if let Some(c) = self.src.peek() {
+                    match (next, c) {
                         ('&', '&') => {
                             self.src.next();
+                            Op::AndAnd
+                        },
+                        ('|', '|') => {
+                            self.src.next(); 
+                            Op::OrOr
+                        },
+                        ('>', '>') => { 
+                            self.src.next();
+                            Op::ShRight
+                        },
+                        ('<', '<') => {
+                            self.src.next();
+                            Op::ShLeft
+                        },
+                        ('<', '=') => {
+                            self.src.next();
+                            Op::LessEq
+                        },
+                        ('>', '=') => {
+                            self.src.next();
+                            Op::GreaterEq
+                        },
+                        _ => match next {
+                            '+' => Op::Add,
+                            '-' => Op::Sub,
+                            '*' => Op::Mul,
+                            '/' => Op::Div,
+                            '%' => Op::Mod,
+    
+                            '&' => Op::AND,
+                            '|' => Op::OR,
+                            '^' => Op::XOR,
+                            '~' => Op::INV,
+    
+                            '>' => Op::Greater,
+                            '<' => Op::Less,
+                            '!' => Op::Not,
+                            _ => unreachable!()
                         }
                     }
                 } else {
@@ -56,20 +95,57 @@ impl<'src> Lexer<'src> {
                         '/' => Op::Div,
                         '%' => Op::Mod,
 
-                        '&'
+                        '&' => Op::AND,
+                        '|' => Op::OR,
+                        '^' => Op::XOR,
+                        '~' => Op::INV,
+
+                        '>' => Op::Greater,
+                        '<' => Op::Less,
+                        '!' => Op::Not,
+                        _ => unreachable!()
                     }
+                };
+                Token(self.src.loc(), TokTy::Op(op))
+            },
+            c if c.is_alphabetic() => {
+                let ident = self.src.slice_while(|c| c.is_alphanumeric() || *c == '_');
+                let ident = match ident {
+                    Some(rest) => String::from(c) + rest,
+                    None => String::from(c)
+                };
+                match Key::from_str(ident.as_str()) {
+                    Ok(key) => Token(self.src.loc(), TokTy::Key(key)),
+                    Err(()) => Token(self.src.loc(), TokTy::Ident(ident))
                 }
             }
-            
+            c if c.is_numeric() => {
+                let num = self.src.slice_while(|c| c.is_alphanumeric() || *c == 'b' || *c == 'x');
+                let num = match num {
+                    Some(rest) => String::from(c) + rest,
+                    None => String::from(c)
+                };
+                Token(self.src.loc(), TokTy::Num(num))
+            }
+
+            _ => return self.tok(),
         })
     }
 }
 
+impl Iterator for Lexer<'_> {
+    type Item = Token;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.tok()
+    }
+}
+
 /// One token, lexed from a source string
-#[derive(Clone, Copy, Debug,)]
+#[derive(Clone, Debug,)]
 pub struct Token(pub CodeLoc, pub TokTy);
 
 /// An enum representing all types of tokens lexed by the lexer
+#[derive(Clone, Debug)]
 pub enum TokTy {
     OpenBrace(BraceTy),
     CloseBrace(BraceTy),
@@ -82,7 +158,8 @@ pub enum TokTy {
     Quote(QuoteTy),
     Ident(String),
     Num(String),
-    Op(Op)
+    Op(Op),
+    Key(Key)
 }
 
 /// All binary and unary operators
@@ -98,6 +175,8 @@ pub enum Op {
     AND,
     OR,
     INV,
+    ShRight,
+    ShLeft,
     
     Less,
     Greater,
@@ -107,7 +186,7 @@ pub enum Op {
     AndAnd,
     OrOr,
     
-    Not,
+    Not,    
 }
 
 /// Every keyword in arc
@@ -150,7 +229,6 @@ impl FromStr for Key {
 }
 
 /// An enum naming all accepted quote types
-#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum QuoteTy {
     Single,
@@ -159,7 +237,6 @@ pub enum QuoteTy {
 }
 
 /// All types of braces, given names for clarity
-#[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BraceTy {
     Smooth,
@@ -199,6 +276,7 @@ impl fmt::Display for CodeLoc {
 
 /// An iterator over characters in a source string, which tracks the current position, line number,
 /// and collumn of the stream
+#[derive(Debug, Clone)]
 struct CharStream<'src> {
     /// A reference to the original source string
     source: &'src str,
@@ -214,7 +292,7 @@ impl<'src> CharStream<'src> {
     /// Create a new character stream from the given source code string
     pub fn new(source: &'src str) -> Self {
         Self {
-            chars: source.chars().peekable(),
+            chars: source.char_indices().peekable(),
             source,
             line: unsafe{ NonZeroU32::new_unchecked(1) },
             col: 0,
@@ -237,7 +315,7 @@ impl<'src> CharStream<'src> {
     fn next_char(&mut self) -> Option<(usize, char)> {
         match self.chars.next() {
             Some((idx, '\n')) => {
-                self.line += 1;
+                self.line = NonZeroU32::new(self.line.get() + 1).unwrap();
                 self.col = 0;
                 Some((idx, '\n'))
             },
@@ -257,7 +335,7 @@ impl<'src> CharStream<'src> {
     /// Take a slice of the input stream so long as `pred` returns `true`.
     /// When it returns `false` or EOF is reached, a slice is returned, unless
     /// `pred` returns `false` on the first character tested, in which case `None` is returned
-    pub fn slice_while<F: FnOnce(&char) -> bool>(&self, pred: F) -> Option<&'src str> {
+    pub fn slice_while<F: Fn(&char) -> bool>(&mut self, pred: F) -> Option<&'src str> {
         let mut len = 0usize;
         let start = self.chars.peek()
             .map(|(idx, _)| *idx)

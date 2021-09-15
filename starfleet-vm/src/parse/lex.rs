@@ -20,7 +20,8 @@ impl<'src> Lexer<'src> {
     /// Lex the next token from the source string
     pub fn tok(&mut self) -> Option<Token> {
         self.src.skip_whitespace();
-        Some(match self.src.next()? {
+        let next = self.src.next()?;
+        Some(match next {
             '"' => Token(self.src.loc(), TokTy::Quote(QuoteTy::Double)),
             '\'' => Token(self.src.loc(), TokTy::Quote(QuoteTy::Single)),
             '`' => Token(self.src.loc(), TokTy::Quote(QuoteTy::Tilde)),
@@ -31,7 +32,35 @@ impl<'src> Lexer<'src> {
 
             '}' => Token(self.src.loc(), TokTy::CloseBrace(BraceTy::Squiggly)),
             ')' => Token(self.src.loc(), TokTy::CloseBrace(BraceTy::Smooth)),
-            ']' => Token(self.src.loc(), TokTy::CloseBrace(BraceTy::Square))
+            ']' => Token(self.src.loc(), TokTy::CloseBrace(BraceTy::Square)),
+            
+            '.' => Token(self.src.loc(), TokTy::Dot),
+            ',' => Token(self.src.loc(), TokTy::Comma),
+            ';' => Token(self.src.loc(), TokTy::Semicolon),
+            ':' => Token(self.src.loc(), TokTy::Colon),
+
+            '+' | '-' | '*' | '/' | '%' | 
+            '&' | '|' | '^' | '~' | 
+            '>' | '<'=> {
+                let op = if let Some(peek) = self.src.peek() {
+                    match (next, *peek) {
+                        ('&', '&') => {
+                            self.src.next();
+                        }
+                    }
+                } else {
+                    match next {
+                        '+' => Op::Add,
+                        '-' => Op::Sub,
+                        '*' => Op::Mul,
+                        '/' => Op::Div,
+                        '%' => Op::Mod,
+
+                        '&'
+                    }
+                }
+            }
+            
         })
     }
 }
@@ -52,6 +81,7 @@ pub enum TokTy {
     
     Quote(QuoteTy),
     Ident(String),
+    Num(String),
     Op(Op)
 }
 

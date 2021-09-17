@@ -2,6 +2,7 @@
 //! string into a token stream which can then be parsed into an Abstract Syntax
 //! Tree
 use std::{str::{CharIndices, FromStr}, iter::Peekable, num::NonZeroU32, fmt};
+use crate::ast::Op;
 
 #[derive(Debug, Clone)]
 pub struct Lexer<'src> {
@@ -37,7 +38,15 @@ impl<'src> Lexer<'src> {
             '.' => Token(self.src.loc(), TokTy::Dot),
             ',' => Token(self.src.loc(), TokTy::Comma),
             ';' => Token(self.src.loc(), TokTy::Semicolon),
-            ':' => Token(self.src.loc(), TokTy::Colon),
+            ':' => {
+                match self.src.peek() {
+                    Some('=') => {
+                        self.src.next();
+                        Token(self.src.loc(), TokTy::Assign)
+                    },
+                    _ => Token(self.src.loc(), TokTy::Colon),
+                }
+            }
 
             '+' | '-' | '*' | '/' | '%' | 
             '&' | '|' | '^' | '~' | 
@@ -154,39 +163,14 @@ pub enum TokTy {
     Comma,
     Colon,
     Semicolon,
+
+    Assign,
     
     Quote(QuoteTy),
     Ident(String),
     Num(String),
     Op(Op),
     Key(Key)
-}
-
-/// All binary and unary operators
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Op {
-    Add,
-    Sub,
-    Mul,
-    Div, 
-    Mod,
-    
-    XOR,
-    AND,
-    OR,
-    INV,
-    ShRight,
-    ShLeft,
-    
-    Less,
-    Greater,
-    Eq,
-    LessEq,
-    GreaterEq,
-    AndAnd,
-    OrOr,
-    
-    Not,    
 }
 
 /// Every keyword in arc
@@ -207,6 +191,9 @@ pub enum Key {
     
     /// Loop while a condition is true
     While,
+
+    /// Object literal
+    Obj,
     
     /// Exit a loop
     Break,
